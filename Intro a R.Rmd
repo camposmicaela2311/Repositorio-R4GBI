@@ -67,9 +67,22 @@ Cuando se coloca `na.rm =TRUE` entonces .....
 Para la manipulación se utilizará la librería `tidyverse`
 
 ```{r tidy, echo = TRUE}
-#librería(tidyverse)
+library(tidyverse); library(ggplot2)
+#data("diamonds")
 
-plot(pressure)
+df= diamonds %>% ggplot(aes(x=depth, y =price))+
+df
+ 
+df= diamonds %>% ggplot(aes(x=depth, y =price, color=cut))+
+  geom_point(size=0.2) + facet_wrap(cut~.)
+df
+
+
+df2= diamonds %>% ggplot(aes(x=depth, y =price, color=cut))+
+  geom_boxplot()+ geom_jitter(size=0.1, alpha=0.4)
+df2
 ```
+
+
 
 
