@@ -32,21 +32,44 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 
 
-# Operaciones básicas de matemáticas lógicas y asignación
+# Operaciones básicas 
+Operaciones básicas de matemáticas lógicas y asignación
+
+$$
+\hat{x}=\frac{\sigma_{i=1}^{x_i}}{n}
+$$
+
 ```{r} 
+x = c(1:100)
+x
+```
+
+```{r vector} 
+xi = sum(x)/length(x)
+xi
+```
+```{r vector} 
 x = c(1:100)
 xi = sum(x)/length(x)
 xi
 ```
 
 Vectores con datos ausentes
-
 ```{r}
 x1 = c(1:10, NaN, 10:-20, NaN, 27)
 x1i = sum(x1, na.rm = TRUE)/length(x1)
 x1i
 ```
+
 Cuando se coloca `na.rm =TRUE` entonces .....
 
+# Manipulación de datos
+Para la manipulación se utilizará la librería `tidyverse`
+
+```{r tidy, echo = TRUE}
+#librería(tidyverse)
+
+plot(pressure)
+```
 
 
