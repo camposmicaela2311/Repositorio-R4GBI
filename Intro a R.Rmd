@@ -29,11 +29,8 @@ plot(pressure)
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-
-
-
-# Operaciones básicas 
-Operaciones básicas de matemáticas lógicas y asignación
+# Operaciones basicas 
+Operaciones basicas de matematicas logicas y asignacion
 
 $$
 \hat{x}=\frac{\sigma_{i=1}^{x_i}}{n}
@@ -63,17 +60,20 @@ x1i
 
 Cuando se coloca `na.rm =TRUE` entonces .....
 
-# Manipulación de datos
+# Manipulacion de datos
 Para la manipulación se utilizará la librería `tidyverse`
 
 ```{r tidy, echo = TRUE}
-library(tidyverse); library(ggplot2)
+#library(tidyverse); library(ggplot2)
 #data("diamonds")
+```
 
-df= diamonds %>% ggplot(aes(x=depth, y =price))+
+
+```{r tidy, echo = TRUE}
+df= diamonds%>% ggplot(aes(x=depth, y =price))+
 df
  
-df= diamonds %>% ggplot(aes(x=depth, y =price, color=cut))+
+df= diamonds%>% ggplot(aes(x=depth, y =price, color=cut))+
   geom_point(size=0.2) + facet_wrap(cut~.)
 df
 
@@ -82,7 +82,3 @@ df2= diamonds %>% ggplot(aes(x=depth, y =price, color=cut))+
   geom_boxplot()+ geom_jitter(size=0.1, alpha=0.4)
 df2
 ```
-
-
-
-
