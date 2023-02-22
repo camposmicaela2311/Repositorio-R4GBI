@@ -63,22 +63,21 @@ Cuando se coloca `na.rm =TRUE` entonces .....
 # Manipulacion de datos
 Para la manipulación se utilizará la librería `tidyverse`
 
-```{r tidy, echo = TRUE}
-#library(tidyverse); library(ggplot2)
-#data("diamonds")
-```
-
+help library)
 
 ```{r tidy, echo = TRUE}
-df= diamonds%>% ggplot(aes(x=depth, y =price))+
-df
- 
-df= diamonds%>% ggplot(aes(x=depth, y =price, color=cut))+
-  geom_point(size=0.2) + facet_wrap(cut~.)
+library(tidyverse);library(ggplot2); library(ggpubr)
+data("diamonds")
+
+df=diamonds %>% ggplot(aes(x=depth, y=price, color=cut)) + 
+  geom_point(size=0.2) + facet_wrap(cut ~.)
 df
 
-
-df2= diamonds %>% ggplot(aes(x=depth, y =price, color=cut))+
-  geom_boxplot()+ geom_jitter(size=0.1, alpha=0.4)
+df2= diamonds %>% filter(price<=1000) %>%
+  ggplot(aes(x=cut, y =price, color=clarity))+
+  geom_boxplot() + geom_jitter(size=0.1, alpha=0.2)
 df2
+
+ggsave(df2, file= "diamond.png", units ="in", width =10,
+       height = 10, dpi=300)
 ```
