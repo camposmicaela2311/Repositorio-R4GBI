@@ -36,3 +36,10 @@ install.packages("tidyverse")
 
 # Alternatively, install just dplyr:
 install.packages("dplyr")
+
+# install.packages("devtools")
+devtools::install_github("tidyverse/dplyr")
+
+#library.library(ggplot2)
+install.packages("ggplot2")
+ 
