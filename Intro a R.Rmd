@@ -2,7 +2,9 @@
 title: "Introducción a R"
 author: "Micaela Campos"
 date: "2023-02-16"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -85,6 +87,7 @@ ggsave(df2, file= "diamond.png", units ="in", width =10,
 
 
 # Tarea1. Mica
+* 22-02-2023
 
 ```{r}
 library(tidyverse);library(ggplot2); library(ggpubr); library(ggpmisc)

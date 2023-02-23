@@ -1,0 +1,261 @@
+---
+title: "Visualización avanzada"
+author: "Moisés Gualapuro"
+format: 
+  html:
+    toc: true
+editor: visual
+---
+
+## Geometrías colectivas
+
+Las geometrías se pueden dividir aproximadamente en geometrías individuales y colectivas. Un geom **individual** dibuja un objeto gráfico distinto para cada observación (fila). Por ejemplo, el punto geom dibuja un punto por fila. Una geom **colectiva muestra múltiples observaciones con un objeto geométrico.** Esto puede ser el resultado de un resumen estadístico, como un diagrama de caja, o puede ser fundamental para la visualización de la geoma, como un polígono. Las líneas y los caminos se encuentran en algún punto intermedio: cada línea se compone de un conjunto de segmentos rectos, pero cada segmento representa dos puntos. ¿Cómo controlamos la asignación de observaciones a elementos gráficos? Este es el trabajo de la `group`estética.
+
+De forma predeterminada, la `group`estética se asigna a la interacción de todas las variables discretas en la trama. Esto a menudo divide los datos correctamente, pero cuando no lo hace, o cuando no se usa una variable discreta en una gráfica, deberá definir explícitamente la estructura de agrupación asignando el grupo a una variable que tiene un valor diferente para cada grupo.
+
+Hay tres casos comunes en los que el valor predeterminado no es suficiente, y consideraremos cada uno a continuación. En los siguientes ejemplos, usaremos un conjunto de datos longitudinal simple, `Oxboys`, del paquete nlme. Registra las estaturas ( `height`) y edades centradas ( `age`) de 26 niños ( `Subject`), medidas en nueve ocasiones ( `Occasion`). `Subject`y `Occasion`se almacenan como factores ordenados.
+
+```{r}
+setwd("D:/GDrive2/My Drive/IKIAM/CLASES/2022II/ETB4")
+library(nlme)
+data(Oxboys, package = "nlme")
+head(Oxboys, 2)
+
+```
+
+## **4.1 Múltiples grupos, una estética**
+
+En muchas situaciones, desea separar sus datos en grupos, pero representarlos de la misma manera. En otras palabras, desea poder distinguir sujetos individuales, pero no identificarlos. Esto es común en estudios longitudinales con muchos sujetos, donde las tramas a menudo se denominan descriptivamente tramas de espagueti. Por ejemplo, la siguiente gráfica muestra la trayectoria de crecimiento de cada niño (cada uno `Subject`):
+
+```{r}
+library(ggplot2)
+ggplot(Oxboys, aes(age, height, group = Subject)) + 
+  geom_point() + geom_line() + theme_bw()
+```
+
+## **4.2 Diferentes grupos en diferentes capas**
+
+A veces queremos trazar resúmenes que utilicen diferentes niveles de agregación: una capa puede mostrar individuos, mientras que otra muestra un resumen general. Sobre la base del ejemplo anterior, supongamos que queremos agregar una sola línea suave que muestre la tendencia general para *todos los* niños. Si usamos la misma agrupación en ambas capas, obtenemos un liso por niño:
+
+```{r}
+ggplot(Oxboys, aes(age, height, group = Subject)) + 
+  geom_line() + geom_smooth(method = "lm", se = FALSE)
+```
+
+Esto no es lo que queríamos; sin darnos cuenta, hemos agregado una línea suavizada para cada niño. La agrupación controla tanto la visualización de los geomas como el funcionamiento de las estadísticas: se ejecuta una transformación estadística para cada grupo.
+
+En lugar de configurar la estética de agrupación en [`ggplot()`](https://ggplot2.tidyverse.org/reference/ggplot.html), donde se aplicará a todas las capas, la configuramos [`geom_line()`](https://ggplot2.tidyverse.org/reference/geom_path.html)para que se aplique solo a las líneas. No hay variables discretas en el gráfico, por lo que la variable de agrupación predeterminada será una constante y obtendremos una suave:
+
+```{r}
+ggplot(Oxboys, aes(age, height)) + 
+  geom_smooth(aes(group = Subject), se = FALSE, size =0.8, colour = "gray") + 
+  geom_smooth(size = 1.5, se = FALSE, colour="red") +
+  theme_bw()
+```
+
+## **4.3 Anular la agrupación predeterminada**
+
+Algunas gráficas tienen una escala x discreta, pero aun así desea dibujar líneas que conecten *entre* grupos. Esta es la estrategia utilizada en gráficos de interacción, gráficos de perfil y gráficos de coordenadas paralelas, entre otros. Por ejemplo, imagine que hemos dibujado diagramas de caja de altura en cada ocasión de medición.
+
+Hay una variable discreta en este diagrama, `Occasion`por lo que obtenemos un diagrama de caja para cada valor único de x. Ahora queremos superponer líneas que conecten a cada niño individualmente. Simplemente sumar [`geom_line()`](https://ggplot2.tidyverse.org/reference/geom_path.html)no funciona: las líneas se dibujan dentro de cada ocasión, no a través de cada tema.
+
+Para obtener la trama que queremos, debemos anular la agrupación para decir que queremos una línea por niño:
+
+```{r}
+ggplot(Oxboys, aes(Occasion, height)) + 
+  geom_line(aes(group = Subject), colour = "gray40", alpha = 0.5) +
+  geom_boxplot(aes(fill = factor(Occasion)), alpha = 0.5) + theme_bw()
+```
+
+## **4.4 Coincidencia de la estética con los objetos gráficos**
+
+Una última cuestión importante con las geomas colectivas es cómo se asigna la estética de las observaciones individuales a la estética de la entidad completa. ¿Qué sucede cuando se asignan diferentes estéticas a un solo elemento geométrico?
+
+En ggplot2, esto se maneja de manera diferente para diferentes geoms colectivos. Las líneas y las rutas funcionan según el principio del "primer valor": cada segmento está definido por dos observaciones, y ggplot2 aplica el valor estético (p. ej., color) asociado con la *primera* observación al dibujar el segmento. Es decir, la estética de la primera observación se usa al dibujar el primer segmento, la segunda observación se usa al dibujar el segundo segmento y así sucesivamente. No se utiliza el valor estético de la última observación:
+
+Vale la pena señalar una limitación adicional para rutas y líneas: el tipo de línea debe ser constante en cada línea individual. En R no hay forma de dibujar una línea que tenga un tipo de línea variable.
+
+¿Qué pasa con otras geomas colectivas, como los polígonos? La mayoría de las geomas colectivas son más complicadas que las líneas y la ruta, y un solo objeto geométrico puede representar muchas observaciones. En tales casos, no es obvio cómo se debe combinar la estética de las observaciones individuales. Por ejemplo, ¿cómo colorearía un polígono que tuviera un color de relleno diferente para cada punto de su borde? Debido a esta ambigüedad, ggplot2 adopta una regla simple: la estética de los componentes individuales se usa solo si son todos iguales. Si la estética difiere para cada componente, ggplot2 usa un valor predeterminado en su lugar.
+
+Estos problemas son más relevantes cuando se mapea la estética a variables continuas. Para variables discretas, el comportamiento predeterminado de ggplot2 es tratar la variable como parte de la estética del grupo, como se describe anteriormente. Esto tiene el efecto de dividir el geom colectivo en partes más pequeñas. Esto funciona particularmente bien para gráficos de barras y áreas, porque apilar las piezas individuales produce la misma forma que los datos desagrupados originales:
+
+```{r}
+library(ggpubr)
+p1 = ggplot(mpg, aes(class)) + geom_bar() + theme_classic()
+
+p2 = ggplot(mpg, aes(class, fill = drv)) + geom_bar()+ theme_classic()
+
+p3 = ggplot(mpg, aes(class, fill = hwy, group = hwy)) + geom_bar()+ theme_classic()
+
+p4 = ggdotplot(ToothGrowth, x = "dose", y = "len",
+                color = "dose", palette = "npg", binwidth = 1)+ theme_classic()
+
+pg1 = ggarrange(p1,p2, p3, p4, labels = c("a", "b", "c", "d"), ncol = 2, nrow = 2)
+```
+
+```{r}
+data(mtcars)
+mtcars$name = rownames(mtcars)
+mtcars$cyl = as.factor(mtcars$cyl)
+
+# barplot por registro
+p5 <- ggbarplot(mtcars, x = "name", y = "mpg", fill = "cyl",  
+                color = "white",  palette = "jco", 
+                sort.val = "asc", sort.by.groups = TRUE,
+                x.text.angle = 90) + font("x.text", size = 8)
+
+# scatterplot con regresión y ecuaciones
+p6 = ggscatter(mtcars, x = "wt", y = "mpg", add = "reg.line", conf.int = TRUE,
+               color = "cyl", palette = "jco", shape = "cyl") +
+  stat_cor(aes(color = cyl), label.x.npc = "centre", label.y.npc="top")
+
+# densityplot
+p7 = ggplot(diamonds, aes(depth, fill = cut, colour = cut)) +
+  geom_density(alpha = 0.2, na.rm = TRUE) + 
+  xlim(58, 68) +  theme_classic() + theme(legend.position = "bottom")
+
+p8 = ggplot(faithfuld, aes(eruptions, waiting)) + 
+  geom_raster(aes(fill = density)) + theme_classic() +
+  scale_fill_gradientn(colours = heat.colors(10, rev = TRUE), na.value = "white")
+  
+ggarrange(p5,p6, labels = c("A", "B"), ncol = 2, nrow = 1, common.legend = TRUE, legend = "bottom")
+```
+
+## Arreglos de figuras
+
+Para organizar **varios gráficos ggplot2** en la misma página, no se pueden usar las funciones estándar de R *(par()* y *layout()) .*
+
+La solución básica es usar el paquete [**gridExtra**](https://github.com/baptiste/gridextra/wiki/arrangeGrob) R, que viene con las siguientes funciones:
+
+-   *grid.arrange* () y *OrganizeGrob* () para organizar múltiples ggplots en una página
+
+-   *marrangeGrob* () para organizar múltiples ggplots en varias páginas.
+
+Sin embargo, estas funciones no intentan alinear los paneles gráficos; en cambio, los gráficos simplemente se colocan en la cuadrícula tal como están, por lo que los ejes no están alineados.
+
+Si se requiere alineación de ejes, puede cambiar al paquete [**cowplot**](https://cran.r-project.org/web/packages/cowplot/vignettes/introduction.html) , que incluye la función **plot_grid** () con el argumento *align* . Sin embargo, el paquete cowplot no contiene ninguna solución para el diseño de varias páginas. Por lo tanto, proporcionamos la función **ggarrange** () \[en ggpubr\], un envoltorio alrededor de la función plot_grid(), para organizar múltiples ggplots en varias páginas. También puede crear una leyenda única común para varias parcelas.
+
+Este artículo le mostrará, paso a paso, cómo combinar múltiples **ggplots** en la misma página, así como también, en varias páginas, usando las funciones auxiliares disponibles en el siguiente paquete R: [**ggpubr** R package](http://www.sthda.com/english/rpkgs/ggpubr/index.html) , **cowplot** y **gridExtra** . También describiremos cómo exportar los gráficos ordenados a un archivo.
+
+```{r}
+library(ggpubr); library(gridExtra); library(cowplot); library(dplyr)
+
+# ggarrange() de ggpubr
+multi1=  ggarrange(p8, p4, p2, p6, 
+                   labels = c("A:raster", "B:Nube", 
+                              "C:barras", "D:regresion"),
+                   ncol = 2, nrow = 2)
+
+multi2 = ggarrange(p5, 
+                   ggarrange(p2,p4,p8, ncol=3, labels= c("B", "C", "D")),
+                   ggarrange(p6, p7, ncol=2, labels= c("E", "F")),
+                   nrow =3, labels = c("A"))
+
+
+ggsave(filename = "multi2.pdf", height = 14, width = 14, 
+       plot = multi2, dpi = 600)
+multi1; multi2
+```
+
+```{r}
+# Tabla resumen de resultados usando ggpubr
+stable <- desc_statby(msleep, measure.var = "sleep_total", 
+                      grps = c("vore") )
+stable <- stable[, c("vore", "length", "mean", "sd")]
+# Tabla resumen y tema
+stable.p <- ggtexttable(stable, rows = NULL, theme = ttheme("light"))
+stable.p
+```
+
+## Colocar un diagrama de caja dentro de un ggplot
+
+1.  Cree un diagrama de dispersión de y = "Sepal.Width" por x = "Sepal.Length" utilizando el conjunto de datos del iris. Función R **ggscatter** () \[ggpubr\]
+
+2.  Cree por separado el diagrama de caja de las variables x e y con fondo transparente. Función R: **ggboxplot** () \[ggpubr\].
+
+3.  Transforme los diagramas de caja en objetos gráficos llamados "grop" en la terminología de Grid. Función R **ggplotGrob** () \[ggplot2\].
+
+4.  Coloque los grobs del diagrama de caja dentro del diagrama de dispersión. Función R: **annotation_custom** () \[ggplot2\].
+
+```{r}
+# Definir límites de la gráfica para insertar
+xmin <- min(iris$Sepal.Length)
+xmax <- max(iris$Sepal.Length)
+ymin <- min(iris$Sepal.Width)
+ymax <- max(iris$Sepal.Width)
+yoffset <- (1/15)*ymax 
+xoffset <- (1/15)*xmax
+
+# Figura principal: scatterplot
+p9 <- ggscatter(iris, x = "Sepal.Length", y = "Sepal.Width",
+                color = "Species", palette = "aaas", position = position_jitter(0.1),
+                size = 2, alpha = 0.4) + 
+  labs(x = "Sepal length (mm)", "Sepal width (mm)", 
+       caption = "Iris data set", tag = "A") 
+  
+
+# Figura inserta 1: Boxplot de x (sepal lenght)
+p10 <- ggboxplot(iris$Sepal.Length, width = 0.3, fill = "lightgray", alpha = 0.5) +
+  rotate() + theme_transparent()
+
+# Figura inserta 2: Boxplot de x (sepal width)
+p11 <- ggboxplot(iris$Sepal.Width, width = 0.3, fill = "lightgray", alpha = 0.5) +
+  theme_transparent()
+
+# Tabla inserta:  resumen de resultados usando ggpubr
+iris_table = iris %>% dplyr::group_by(Species) %>%  
+  summarise(n = n(), mean = mean(Sepal.Length), sd = sd(Sepal.Length))
+
+iris_table <- ggtexttable(iris_table, rows = NULL, theme = ttheme("mBlueWhite"))
+
+
+# Crear objetos insertables tipo grob
+p10_grob <- ggplotGrob(p10)
+p11_grob <- ggplotGrob(p11)
+iris_grob <- ggplotGrob(iris_table)
+
+
+
+# Insertar grobs() en la figura principal
+p9 + 
+  annotation_custom(grob = p10_grob, xmin = xmin, xmax = xmax, 
+                       ymin = ymin-yoffset, ymax = ymin+2*yoffset) +
+  annotation_custom(grob = p11_grob,
+                       xmin = xmin-xoffset, xmax = xmin+xoffset, 
+                       ymin = ymin, ymax = ymax) +
+  annotation_custom(grob = iris_grob, 
+                    xmin = 6.5, xmax = 8.1, ymin = 3.5, ymax = ymax)
+
+```
+
+Haciendo Zoom
+
+```{r}
+set.seed(42)
+n <- 1000
+x <- runif(n) * 3
+y <- x * sin(1/x) + rnorm(n) / 25
+
+df <- data.frame(x = x, y = y)
+
+p1 <- ggplot(df, aes(x, y)) + geom_point(alpha = 0.3, col = "blue") +
+    geom_smooth(se = FALSE) + theme_bw()
+
+p2 <- ggplot(df, aes(x, y)) + geom_point(alpha = 0.3, col = "navyblue") +
+    geom_smooth(se = FALSE) + scale_x_continuous(limits = c(0, 0.5)) +
+    scale_y_continuous(limits = c(-0.3, 0.4)) + theme_bw()
+
+p1 + annotation_custom(ggplotGrob(p2), xmin = 1, xmax = 3, ymin = -0.3, ymax = 0.6)
+```
+
+## Actividad
+
+En base a lo revisado en el módulo de visualización, realice lo siguiente:
+
+1.  Replique la figura compuesta.
+
+    ![Figura compuesta](multi3.png)
+
+2.  Replicar la figura embebida
+
+    ![Figura embebida](life2007.png)
